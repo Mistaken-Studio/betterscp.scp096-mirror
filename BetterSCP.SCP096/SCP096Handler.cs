@@ -27,64 +27,53 @@ namespace Mistaken.BetterSCP.SCP096
 
         public override void OnEnable()
         {
-            Exiled.Events.Handlers.Server.RoundStarted += this.Handle(() => this.Server_RoundStarted(), "RoundStart");
             Exiled.Events.Handlers.Scp096.AddingTarget += this.Handle<Exiled.Events.EventArgs.AddingTargetEventArgs>((ev) => this.Scp096_AddingTarget(ev));
+            Exiled.Events.Handlers.Scp096.Enraging += this.Handle<Exiled.Events.EventArgs.EnragingEventArgs>((ev) => this.Scp096_Enraging(ev));
         }
 
         public override void OnDisable()
         {
-            Exiled.Events.Handlers.Server.RoundStarted -= this.Handle(() => this.Server_RoundStarted(), "RoundStart");
             Exiled.Events.Handlers.Scp096.AddingTarget -= this.Handle<Exiled.Events.EventArgs.AddingTargetEventArgs>((ev) => this.Scp096_AddingTarget(ev));
+        }
+
+        private void Scp096_Enraging(Exiled.Events.EventArgs.EnragingEventArgs ev)
+        {
+            this.RunCoroutine(this.RageGUI(ev.Player, ev.Scp096), "RageGUI");
         }
 
         private void Scp096_AddingTarget(Exiled.Events.EventArgs.AddingTargetEventArgs ev)
         {
-            if (ev.Target.GetSessionVar<bool>(API.SessionVarType.SPAWN_PROTECT))
+            if (ev.Target.GetSessionVar<bool>(SessionVarType.SPAWN_PROTECT))
                 ev.EnrageTimeToAdd = 0;
         }
 
-        private void Server_RoundStarted()
+        private IEnumerator<float> RageGUI(Player scp096, PlayableScps.Scp096 script)
         {
-            this.RunCoroutine(this.Inform096Target(), "Inform096Target");
-        }
-
-        private IEnumerator<float> Inform096Target()
-        {
-            yield return Timing.WaitForSeconds(1f);
             HashSet<Player> added = new HashSet<Player>();
             Player[] lastAdded;
-            int rid = RoundPlus.RoundId;
-            while (Round.IsStarted && rid == RoundPlus.RoundId)
+            do
             {
                 lastAdded = added.ToArray();
                 added.Clear();
-                foreach (var scp096 in RealPlayers.Get(RoleType.Scp096))
+                try
                 {
-                    try
+                    int targets = script._targets.Count;
+                    string targetMessage = string.Format(PluginHandler.Instance.Translation.Inform096Target, targets);
+                    foreach (var item in script._targets.ToArray())
                     {
-                        var scp096script = scp096.CurrentScp as PlayableScps.Scp096;
-                        if (scp096script.Enraged || scp096script.Enraging)
-                        {
-                            string targetMessage = string.Format(PluginHandler.Instance.Translation.Inform096Target, scp096script._targets.Count);
-                            foreach (var item in scp096script._targets.ToArray())
-                            {
-                                var p = Player.Get(item);
-                                p.SetGUI("scp096", PseudoGUIPosition.TOP, targetMessage);
-                                added.Add(p);
-                            }
+                        var p = Player.Get(item);
+                        p.SetGUI("scp096", PseudoGUIPosition.TOP, targetMessage);
+                        added.Add(p);
+                    }
 
-                            var time = Mathf.RoundToInt(scp096script.EnrageTimeLeft).ToString();
-                            if (time == "0")
-                                time = "[REDACTED]";
-                            scp096.SetGUI("scp096", PseudoGUIPosition.TOP, string.Format(PluginHandler.Instance.Translation.Inform096, scp096script._targets.Count, time));
-                            added.Add(scp096);
-                        }
-                    }
-                    catch (System.Exception ex)
-                    {
-                        this.Log.Error(ex.Message);
-                        this.Log.Error(ex.StackTrace);
-                    }
+                    var time = Mathf.RoundToInt(script.EnrageTimeLeft).ToString();
+                    scp096.SetGUI("scp096", PseudoGUIPosition.TOP, string.Format(PluginHandler.Instance.Translation.Inform096, targets, time));
+                    added.Add(scp096);
+                }
+                catch (System.Exception ex)
+                {
+                    this.Log.Error(ex.Message);
+                    this.Log.Error(ex.StackTrace);
                 }
 
                 foreach (var player in lastAdded.Where(i => !added.Contains(i)))
@@ -92,6 +81,10 @@ namespace Mistaken.BetterSCP.SCP096
 
                 yield return Timing.WaitForSeconds(1f);
             }
+            while (script.Enraging || script.Enraged);
+
+            foreach (var player in lastAdded)
+                player.SetGUI("scp096", PseudoGUIPosition.TOP, null);
         }
     }
 }
