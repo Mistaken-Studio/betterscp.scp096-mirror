@@ -27,13 +27,14 @@ namespace Mistaken.BetterSCP.SCP096
 
         public override void OnEnable()
         {
-            Exiled.Events.Handlers.Scp096.AddingTarget += this.Handle<Exiled.Events.EventArgs.AddingTargetEventArgs>((ev) => this.Scp096_AddingTarget(ev));
-            Exiled.Events.Handlers.Scp096.Enraging += this.Handle<Exiled.Events.EventArgs.EnragingEventArgs>((ev) => this.Scp096_Enraging(ev));
+            Exiled.Events.Handlers.Scp096.AddingTarget += this.Scp096_AddingTarget;
+            Exiled.Events.Handlers.Scp096.Enraging += this.Scp096_Enraging;
         }
 
         public override void OnDisable()
         {
-            Exiled.Events.Handlers.Scp096.AddingTarget -= this.Handle<Exiled.Events.EventArgs.AddingTargetEventArgs>((ev) => this.Scp096_AddingTarget(ev));
+            Exiled.Events.Handlers.Scp096.AddingTarget -= this.Scp096_AddingTarget;
+            Exiled.Events.Handlers.Scp096.Enraging -= this.Scp096_Enraging;
         }
 
         private void Scp096_Enraging(Exiled.Events.EventArgs.EnragingEventArgs ev)
