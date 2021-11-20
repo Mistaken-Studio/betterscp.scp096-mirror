@@ -39,9 +39,11 @@ namespace Mistaken.BetterSCP.SCP096
             Exiled.Events.Handlers.Scp096.CalmingDown -= this.Scp096_CalmingDown;
         }
 
+        private readonly HashSet<Player> forceDisable = new HashSet<Player>();
+
         private void Scp096_CalmingDown(Exiled.Events.EventArgs.CalmingDownEventArgs ev)
         {
-            forceDisable.Add(ev.Player);
+            this.forceDisable.Add(ev.Player);
             ev.Player.SetGUI("scp096", PseudoGUIPosition.TOP, null);
             foreach (var player in ev.Scp096._targets)
                 Player.Get(player).SetGUI("scp096", PseudoGUIPosition.TOP, null);
@@ -54,15 +56,13 @@ namespace Mistaken.BetterSCP.SCP096
 
         private void Scp096_AddingTarget(Exiled.Events.EventArgs.AddingTargetEventArgs ev)
         {
-            if (ev.Target.GetSessionVar<bool>(SessionVarType.SPAWN_PROTECT))
+            if (ev.Target.GetSessionVariable<bool>(SessionVarType.SPAWN_PROTECT))
                 ev.EnrageTimeToAdd = 0;
         }
 
-        private static readonly HashSet<Player> forceDisable = new HashSet<Player>();
-
         private IEnumerator<float> RageGUI(Player scp096, PlayableScps.Scp096 script)
         {
-            forceDisable.Remove(scp096);
+            this.forceDisable.Remove(scp096);
             HashSet<Player> added = new HashSet<Player>();
             Player[] lastAdded;
             do
@@ -95,9 +95,9 @@ namespace Mistaken.BetterSCP.SCP096
 
                 yield return Timing.WaitForSeconds(1f);
             }
-            while ((script.Enraging || script.Enraged) && !forceDisable.Contains(scp096));
+            while ((script.Enraging || script.Enraged) && !this.forceDisable.Contains(scp096));
 
-            forceDisable.Remove(scp096);
+            this.forceDisable.Remove(scp096);
 
             foreach (var player in lastAdded)
                 player.SetGUI("scp096", PseudoGUIPosition.TOP, null);
