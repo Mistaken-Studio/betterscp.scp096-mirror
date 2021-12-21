@@ -30,6 +30,8 @@ namespace Mistaken.BetterSCP.SCP096
             Exiled.Events.Handlers.Scp096.AddingTarget += this.Scp096_AddingTarget;
             Exiled.Events.Handlers.Scp096.Enraging += this.Scp096_Enraging;
             Exiled.Events.Handlers.Scp096.CalmingDown += this.Scp096_CalmingDown;
+            Exiled.Events.Handlers.Server.RestartingRound += this.Server_RestartingRound;
+            Exiled.Events.Handlers.Server.WaitingForPlayers += this.Server_WaitingForPlayers;
         }
 
         public override void OnDisable()
@@ -37,6 +39,19 @@ namespace Mistaken.BetterSCP.SCP096
             Exiled.Events.Handlers.Scp096.AddingTarget -= this.Scp096_AddingTarget;
             Exiled.Events.Handlers.Scp096.Enraging -= this.Scp096_Enraging;
             Exiled.Events.Handlers.Scp096.CalmingDown -= this.Scp096_CalmingDown;
+            Exiled.Events.Handlers.Server.RestartingRound += this.Server_RestartingRound;
+            Exiled.Events.Handlers.Server.WaitingForPlayers += this.Server_WaitingForPlayers;
+        }
+
+        private void Server_WaitingForPlayers()
+        {
+            this.forceDisable.Clear();
+        }
+
+        private void Server_RestartingRound()
+        {
+            foreach (var item in Player.Get(RoleType.Scp096))
+                this.forceDisable.Add(item);
         }
 
         private readonly HashSet<Player> forceDisable = new HashSet<Player>();
@@ -76,12 +91,14 @@ namespace Mistaken.BetterSCP.SCP096
                     foreach (var item in script._targets.ToArray())
                     {
                         var p = Player.Get(item);
+                        if (p == null)
+                            continue;
                         p.SetGUI("scp096", PseudoGUIPosition.TOP, targetMessage);
                         added.Add(p);
                     }
 
                     var time = Mathf.RoundToInt(script.EnrageTimeLeft).ToString();
-                    scp096.SetGUI("scp096", PseudoGUIPosition.TOP, string.Format(PluginHandler.Instance.Translation.Inform096, targets, time));
+                    scp096?.SetGUI("scp096", PseudoGUIPosition.TOP, string.Format(PluginHandler.Instance.Translation.Inform096, targets, time));
                     added.Add(scp096);
                 }
                 catch (System.Exception ex)
@@ -91,7 +108,7 @@ namespace Mistaken.BetterSCP.SCP096
                 }
 
                 foreach (var player in lastAdded.Where(i => !added.Contains(i)))
-                    player.SetGUI("scp096", PseudoGUIPosition.TOP, null);
+                    player?.SetGUI("scp096", PseudoGUIPosition.TOP, null);
 
                 yield return Timing.WaitForSeconds(1f);
             }
@@ -100,7 +117,7 @@ namespace Mistaken.BetterSCP.SCP096
             this.forceDisable.Remove(scp096);
 
             foreach (var player in lastAdded)
-                player.SetGUI("scp096", PseudoGUIPosition.TOP, null);
+                player?.SetGUI("scp096", PseudoGUIPosition.TOP, null);
         }
     }
 }
